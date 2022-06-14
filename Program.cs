@@ -9,9 +9,14 @@ public class AutofacTest
     public void ResolveAllCommandHandlers_IsSuccessful()
     {
         var builder = new ContainerBuilder();
-        builder.RegisterAssemblyTypes(Assembly.GetExecutingAssembly())
-            .AsClosedTypesOf(typeof(IHandler<>))
-            .AsImplementedInterfaces();
+        
+        builder.RegisterType(typeof(CommandHandler1))
+            .As(typeof(ICommandHandler<Command>))
+            .As(typeof(IHandler<Command>));
+        builder.RegisterType(typeof(CommandHandler2))
+            .As(typeof(ICommandHandler<Command>))
+            .As(typeof(IHandler<Command>));
+
 
         var container = builder.Build();
 
@@ -22,9 +27,38 @@ public class AutofacTest
     }
 
     [Test]
-    public void ResolveAllDecoratedCommandHandlers_IsSucessful()
+    public void ResolveAllDecoratedCommandHandlers_Manual_IsSucessful()
     {
         var builder = new ContainerBuilder();
+
+        builder.RegisterType(typeof(CommandHandler1))
+            .As(typeof(ICommandHandler<Command>))
+            .As(typeof(IHandler<Command>));
+        builder.RegisterType(typeof(CommandHandler2))
+            .As(typeof(ICommandHandler<Command>))
+            .As(typeof(IHandler<Command>));
+
+
+        builder.RegisterGenericDecorator(
+            typeof(CommandHandlerDecorator<>),
+            typeof(IHandler<>),
+            context => context.ImplementationType.GetInterfaces().Any(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(ICommandHandler<>))
+        );
+
+        var container = builder.Build();
+
+        var commandHandlers = ((IEnumerable<IHandler<Command>>)container.Resolve(typeof(IEnumerable<IHandler<Command>>))).ToList();
+        
+        Assert.AreEqual(((CommandHandlerDecorator<Command>)commandHandlers[0]).Decorated.GetType(), typeof(CommandHandler1)); //fails, decorated is typeof(CommandHandler2)
+        Assert.AreEqual(((CommandHandlerDecorator<Command>)commandHandlers[1]).Decorated.GetType(), typeof(CommandHandler2));
+
+    }
+
+    [Test]
+    public void ResolveAllDecoratedCommandHandlers_Scanning_IsSucessful()
+    {
+        var builder = new ContainerBuilder();
+
         builder.RegisterAssemblyTypes(Assembly.GetExecutingAssembly())
             .AsClosedTypesOf(typeof(IHandler<>))
             .AsImplementedInterfaces();
@@ -38,7 +72,7 @@ public class AutofacTest
         var container = builder.Build();
 
         var commandHandlers = ((IEnumerable<IHandler<Command>>)container.Resolve(typeof(IEnumerable<IHandler<Command>>))).ToList();
-        
+
         Assert.AreEqual(((CommandHandlerDecorator<Command>)commandHandlers[0]).Decorated.GetType(), typeof(CommandHandler1)); //fails, decorated is typeof(CommandHandler2)
         Assert.AreEqual(((CommandHandlerDecorator<Command>)commandHandlers[1]).Decorated.GetType(), typeof(CommandHandler2));
 
