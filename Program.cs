@@ -9,7 +9,12 @@ public class AutofacTest
     public void ResolveAllCommandHandlers_IsSuccessful()
     {
         var builder = new ContainerBuilder();
-        
+
+        // this works as well instead of the manual registrations below
+        //builder.RegisterAssemblyTypes(Assembly.GetExecutingAssembly())
+        //    .AsClosedTypesOf(typeof(IHandler<>))
+        //    .AsImplementedInterfaces();
+
         builder.RegisterType(typeof(CommandHandler1))
             .As(typeof(ICommandHandler<Command>))
             .As(typeof(IHandler<Command>));
