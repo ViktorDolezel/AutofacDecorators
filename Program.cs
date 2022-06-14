@@ -1,4 +1,4 @@
-﻿using Autofac;
+﻿using Autofac; //Version="6.4.0"
 using NUnit.Framework;
 using System.Reflection;
 
